@@ -3,7 +3,6 @@
 /** Routes for users. */
 
 const jsonschema = require("jsonschema");
-
 const express = require("express");
 const { ensureLoggedIn, ensureAdmin, ensureCorrectUserOrAdmin } = require("../middleware/auth");
 const { BadRequestError } = require("../expressError");
@@ -37,6 +36,22 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
     const user = await User.register(req.body);
     const token = createToken(user);
     return res.status(201).json({ user, token });
+  } catch (err) {
+    return next(err);
+  }
+});
+
+/** 
+ * POST /users/:username/jobs/:id => { applied: jobId }
+ * 
+ * Allows a user to apply for a job (or an admin to do it for them).
+ * 
+ * Authorization required: login (admin or same user)
+ */
+router.post("/:username/jobs/:id", ensureLoggedIn, ensureCorrectUserOrAdmin, async function (req, res, next) {
+  try {
+    const result = await User.applyForJob(req.params.username, req.params.id);
+    return res.status(201).json(result);
   } catch (err) {
     return next(err);
   }

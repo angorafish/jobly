@@ -3,8 +3,8 @@
 const request = require("supertest");
 
 const db = require("../db.js");
-const app = require("../app");
-const User = require("../models/user");
+const app = require("../app.js");
+const User = require("../models/user.js");
 
 const {
   commonBeforeAll,
@@ -13,7 +13,7 @@ const {
   commonAfterAll,
   u1Token,
   adminToken,
-} = require("./_testCommon");
+} = require("../routes/_testCommon.js");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
@@ -126,6 +126,47 @@ describe("POST /users", function () {
   });
 });
 
+/************************************** POST /users/:username/jobs/:id */
+
+describe("POST /users/:username/jobs/:id", function () {
+  test("works for same user", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/1`)
+      .set("authorization", `Bearer ${u1Token}`);
+    expect(resp.statusCode).toEqual(201);
+    expect(resp.body).toEqual({ applied: 1 });
+  });
+
+  test("works for admin", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/1`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.statusCode).toEqual(201);
+    expect(resp.body).toEqual({ applied: 1 });
+  });
+
+  test("unauth for other users", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/1`)
+      .set("authorization", `Bearer ${u2Token}`); // Assuming u2Token is defined
+    expect(resp.statusCode).toEqual(401);
+  });
+
+  test("not found for no such user", async function () {
+    const resp = await request(app)
+      .post(`/users/nope/jobs/1`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.statusCode).toEqual(404);
+  });
+
+  test("not found for no such job", async function () {
+    const resp = await request(app)
+      .post(`/users/u1/jobs/9999`)
+      .set("authorization", `Bearer ${adminToken}`);
+    expect(resp.statusCode).toEqual(404);
+  });
+});
+
 /************************************** GET /users */
 
 describe("GET /users", function () {
@@ -199,6 +240,7 @@ describe("GET /users/:username", function () {
         lastName: "U1L",
         email: "user1@user.com",
         isAdmin: false,
+        jobs: [1],  // Assuming user u1 has applied for job with id 1
       },
     });
   });
@@ -214,6 +256,7 @@ describe("GET /users/:username", function () {
         lastName: "U1L",
         email: "user1@user.com",
         isAdmin: false,
+        jobs: [1],  // Assuming user u1 has applied for job with id 1
       },
     });
   });
