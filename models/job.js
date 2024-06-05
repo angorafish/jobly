@@ -13,14 +13,14 @@ class Job {
      * 
      * Returns { id, title, salary, equity, companyHandle }
      * 
-     * Thhrows BadRequestError if job already in database.
+     * Throws BadRequestError if job already in database.
      */
     static async create({ title, salary, equity, companyHandle }) {
         const result = await db.query(
             `INSERT INTO jobs
             (title, salary, equity, company_handle)
             VALUES ($1, $2, $3, $4)
-            RETURNING id, title, salary, equity, company_handle AS "companyHandle`,
+            RETURNING id, title, salary, equity, company_handle AS "companyHandle"`,
             [
                 title,
                 salary,
@@ -34,13 +34,42 @@ class Job {
 
     /** Find all jobs.
      * 
-     * Returns [{ id, title, salary, equity, companyhandle }, ...]
+     * Can filter on provided search filters:
+     * - title (case-insensitive, matches-any-part-of-string search)
+     * - minSalary
+     * - hasEquity (true to filter to jobs that provide a non-zero amount of equity)
+     * 
+     * Returns [{ id, title, salary, equity, companyHandle }, ...]
      */
-    static async findAll() {
-        const jobsRes = await db.query(
-            `SELECT id, title, salary, equity, company_handle AS "companyHandle"
-            FROM jobs
-            ORDER BY title`);
+    static async findAll({ title, minSalary, hasEquity } = {}) {
+        let query = `SELECT id, title, salary, equity, company_handle AS "companyHandle"
+                     FROM jobs`;
+        let whereExpressions = [];
+        let queryValues = [];
+
+        // For each possible search term, add to whereExpressions and queryValues so we can generate the right SQL
+
+        if (title !== undefined) {
+            queryValues.push(`%${title}%`);
+            whereExpressions.push(`title ILIKE $${queryValues.length}`);
+        }
+
+        if (minSalary !== undefined) {
+            queryValues.push(minSalary);
+            whereExpressions.push(`salary >= $${queryValues.length}`);
+        }
+
+        if (hasEquity === true) {
+            whereExpressions.push(`equity > 0`);
+        }
+
+        if (whereExpressions.length > 0) {
+            query += " WHERE " + whereExpressions.join(" AND ");
+        }
+
+        // Finalize query and return results
+        query += " ORDER BY title";
+        const jobsRes = await db.query(query, queryValues);
         return jobsRes.rows;
     }
 
@@ -48,7 +77,7 @@ class Job {
      * 
      * Returns { id, title, salary, equity, companyHandle }
      * 
-     * throws NotFoundError if not found.
+     * Throws NotFoundError if not found.
      */
     static async get(id) {
         const jobRes = await db.query(
@@ -63,7 +92,7 @@ class Job {
 
     /** Update job data with `data`.
      * 
-     * This is a "partial update" - it's fine if data doesn't conain all fields;
+     * This is a "partial update" - it's fine if data doesn't contain all fields;
      * this only changes provided ones.
      * 
      * Data can include: { title, salary, equity }
