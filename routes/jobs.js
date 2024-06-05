@@ -7,7 +7,8 @@ const express = require("express");
 const { BadRequestError } = require("../expressError");
 const { ensureLoggedIn, ensureAdmin } = require("../middleware/auth");
 const Job = require("../models/job");
-const jobNewSchema = require("../schemas/jobUpdate.json");
+const jobNewSchema = require("../schemas/jobNew.json");
+const jobUpdateSchema = require("../schemas/jobUpdate.json");
 
 const router = new express.Router();
 
@@ -37,7 +38,7 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
 /** GET / =>
  *      { jobs: [ { id, title, salary, ewuity, companyHandle }, ...] }
  * 
- * Cn filter on provided search filters:
+ * Can filter on provided search filters:
  * - title
  * - minSalary
  * - hasEquity
@@ -46,7 +47,14 @@ router.post("/", ensureLoggedIn, ensureAdmin, async function (req, res, next) {
  */
 router.get("/", async function (req, res, next) {
     try {
-        const jobs = await Job.findAll();
+        const { title, minSalary, hasEquity } = req.query;
+      
+        const filters = {};
+        if (title) filters.title = title;
+        if (minSalary !== undefined) filters.minSalary = parseInt(minSalary);
+        if (hasEquity !== undefined) filters.hasEquity = hasEquity === "true";
+      
+        const jobs = await Job.findAll(filters);
         return res.json({ jobs });
     } catch (err) {
         return next(err);

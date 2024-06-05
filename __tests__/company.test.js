@@ -227,14 +227,16 @@ describe("update", function () {
     const result = await db.query(
           `SELECT handle, name, description, num_employees, logo_url
            FROM companies
-           WHERE handle = 'c1'`);
+           WHERE handle = 'c1'`
+    );
     expect(result.rows).toEqual([{
       handle: "c1",
       name: "New",
       description: "New Description",
       num_employees: 10,
       logo_url: "http://new.img",
-    }]);
+    },
+  ]);
   });
 
   test("works: null fields", async function () {
@@ -254,14 +256,17 @@ describe("update", function () {
     const result = await db.query(
           `SELECT handle, name, description, num_employees, logo_url
            FROM companies
-           WHERE handle = 'c1'`);
-    expect(result.rows).toEqual([{
+           WHERE handle = 'c1'`
+    );
+    expect(result.rows).toEqual([
+      {
       handle: "c1",
       name: "New",
       description: "New Description",
       num_employees: null,
       logo_url: null,
-    }]);
+    },
+  ]);
   });
 
   test("not found if no such company", async function () {

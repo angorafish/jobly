@@ -47,7 +47,6 @@ class Job {
         let whereExpressions = [];
         let queryValues = [];
 
-        // For each possible search term, add to whereExpressions and queryValues so we can generate the right SQL
 
         if (title !== undefined) {
             queryValues.push(`%${title}%`);

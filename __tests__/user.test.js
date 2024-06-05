@@ -1,23 +1,35 @@
 "use strict";
 
+const request = require("supertest");
 const {
   NotFoundError,
   BadRequestError,
   UnauthorizedError,
-} = require("../expressError");
+} = require("../expressError.js");
 const db = require("../db.js");
-const User = require("./user.js");
+const app = require("../app.js");
+const User = require("../models/user.js");
 const {
   commonBeforeAll,
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
-} = require("./_testCommon");
+  u1Token,
+  u2Token,
+  adminToken,
+} = require("../models/_testCommon.js");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
 afterEach(commonAfterEach);
 afterAll(commonAfterAll);
+
+let jobId1;
+
+beforeEach(async () => {
+  const jobs = await db.query(`SELECT id FROM jobs ORDER BY id`);
+  jobId1 = jobs.rows[0].id;
+});
 
 /************************************** authenticate */
 
@@ -28,7 +40,7 @@ describe("authenticate", function () {
       username: "u1",
       firstName: "U1F",
       lastName: "U1L",
-      email: "u1@email.com",
+      email: "user1@user.com",
       isAdmin: false,
     });
   });
@@ -44,7 +56,7 @@ describe("authenticate", function () {
 
   test("unauth if wrong password", async function () {
     try {
-      await User.authenticate("c1", "wrong");
+      await User.authenticate("u1", "wrong");
       fail();
     } catch (err) {
       expect(err instanceof UnauthorizedError).toBeTruthy();
@@ -112,17 +124,31 @@ describe("findAll", function () {
     const users = await User.findAll();
     expect(users).toEqual([
       {
+        username: "admin",
+        firstName: "admin",
+        lastName: "admin",
+        email: "admin@user.com",
+        isAdmin: true,
+      },
+      {
         username: "u1",
         firstName: "U1F",
         lastName: "U1L",
-        email: "u1@email.com",
+        email: "user1@user.com",
         isAdmin: false,
       },
       {
         username: "u2",
         firstName: "U2F",
         lastName: "U2L",
-        email: "u2@email.com",
+        email: "user2@user.com",
+        isAdmin: false,
+      },
+      {
+        username: "u3",
+        firstName: "U3F",
+        lastName: "U3L",
+        email: "user3@user.com",
         isAdmin: false,
       },
     ]);
@@ -134,12 +160,15 @@ describe("findAll", function () {
 describe("get", function () {
   test("works", async function () {
     let user = await User.get("u1");
+    const jobs = await db.query(`SELECT id FROM jobs ORDER BY id`);
+    const jobIds = jobs.rows.map(job => job.id);
     expect(user).toEqual({
       username: "u1",
       firstName: "U1F",
       lastName: "U1L",
-      email: "u1@email.com",
+      email: "user1@user.com",
       isAdmin: false,
+      jobs: expect.arrayContaining(jobIds),
     });
   });
 
@@ -179,7 +208,7 @@ describe("update", function () {
       username: "u1",
       firstName: "U1F",
       lastName: "U1L",
-      email: "u1@email.com",
+      email: "user1@user.com",
       isAdmin: false,
     });
     const found = await db.query("SELECT * FROM users WHERE username = 'u1'");
@@ -201,7 +230,7 @@ describe("update", function () {
   test("bad request if no data", async function () {
     expect.assertions(1);
     try {
-      await User.update("c1", {});
+      await User.update("u1", {});
       fail();
     } catch (err) {
       expect(err instanceof BadRequestError).toBeTruthy();

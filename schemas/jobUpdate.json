@@ -1,0 +1,10 @@
+{
+    "type": "object",
+    "properties": {
+        "title": { "type": "string" },
+        "salary": { "type": "number" },
+        "equity": { "type": "string" }
+    },
+    "required": [],
+    "additionalProperties": false
+}

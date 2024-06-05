@@ -21,7 +21,6 @@ class User {
    **/
 
   static async authenticate(username, password) {
-    // try to find the user first
     const result = await db.query(
           `SELECT username,
                   password,
@@ -37,7 +36,6 @@ class User {
     const user = result.rows[0];
 
     if (user) {
-      // compare hashed password to a new hash from password
       const isValid = await bcrypt.compare(password, user.password);
       if (isValid === true) {
         delete user.password;
@@ -116,8 +114,8 @@ class User {
 
   /** Given a username, return data about user.
    *
-   * Returns { username, first_name, last_name, is_admin, jobs }
-   *   where jobs is { id, title, company_handle, company_name, state }
+   * Returns { username, first_name, last_name, email, is_admin, jobs }
+   *   where jobs is [jobId, jobId, ...]
    *
    * Throws NotFoundError if user not found.
    **/
@@ -138,7 +136,7 @@ class User {
     if (!user) throw new NotFoundError(`No user: ${username}`);
 
     const jobsRes = await db.query(
-      `SELEC job_id AS "jobId"
+      `SELECT job_id AS "jobId"
       FROM applications
       WHERE username = $1`,
       [username]);

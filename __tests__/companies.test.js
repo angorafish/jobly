@@ -10,9 +10,9 @@ const {
   commonBeforeEach,
   commonAfterEach,
   commonAfterAll,
-  u1Token, // Regular user token
-  adminToken // Admin user token
-} = require("./_testCommon");
+  u1Token,
+  adminToken,
+} = require("../models/_testCommon.js");
 
 beforeAll(commonBeforeAll);
 beforeEach(commonBeforeEach);
@@ -202,9 +202,6 @@ describe("GET /companies", function () {
   });
 
   test("fails: test next() handler", async function () {
-    // there's no normal failure event which will cause this route to fail ---
-    // thus making it hard to test that the error-handler works with it. This
-    // should cause an error, all right :)
     await db.query("DROP TABLE companies CASCADE");
     const resp = await request(app)
         .get("/companies")
@@ -225,19 +222,34 @@ describe("GET /companies/:handle", function () {
         description: "Desc1",
         numEmployees: 1,
         logoUrl: "http://c1.img",
+        jobs: [
+          {
+            id: expect.any(Number),
+            title: "Job1",
+            salary: 100000,
+            equity: "0.1",
+          },
+          {
+            id: expect.any(Number),
+            title: "Job2",
+            salary: 200000,
+            equity: "0.2",
+          },
+        ],
       },
     });
   });
 
   test("works for anon: company w/o jobs", async function () {
-    const resp = await request(app).get(`/companies/c2`);
+    const resp = await request(app).get(`/companies/c3`);
     expect(resp.body).toEqual({
       company: {
-        handle: "c2",
-        name: "C2",
-        description: "Desc2",
-        numEmployees: 2,
-        logoUrl: "http://c2.img",
+        handle: "c3",
+        name: "C3",
+        description: "Desc3",
+        numEmployees: 3,
+        logoUrl: "http://c3.img",
+        jobs: [],
       },
     });
   });
